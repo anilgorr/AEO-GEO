@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { updateTaskStatus } from "@/app/(dashboard)/tasks-actions";
+import { updateTaskStatus, updateContentStage } from "@/app/(dashboard)/tasks-actions";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
@@ -11,7 +11,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TASK_STATUSES, type Task, type TaskStatus } from "@/lib/types";
+import {
+  CONTENT_STAGES,
+  TASK_STATUSES,
+  type ContentStage,
+  type Task,
+  type TaskStatus,
+} from "@/lib/types";
 
 const TYPE_DOT: Record<string, string> = {
   seo: "bg-blue-600",
@@ -115,6 +121,34 @@ function TaskCard({ task }: { task: Task }) {
             ))}
           </SelectContent>
         </Select>
+
+        {task.type === "content" && task.content_stage && (
+          <div className="pt-1">
+            <p className="mb-1 text-xs font-medium text-muted-foreground">
+              Content approval stage
+            </p>
+            <Select
+              value={task.content_stage}
+              disabled={isPending}
+              onValueChange={(value) =>
+                startTransition(() =>
+                  updateContentStage(task.id, value as ContentStage)
+                )
+              }
+            >
+              <SelectTrigger className="h-8 rounded-full text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CONTENT_STAGES.map((s) => (
+                  <SelectItem key={s.value} value={s.value}>
+                    {s.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

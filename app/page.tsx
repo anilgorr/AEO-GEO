@@ -7,6 +7,7 @@ import { TaskBoard } from "@/components/task-board";
 import { DueThisWeek } from "@/components/due-this-week";
 import { CreateTaskDialog } from "@/components/create-task-dialog";
 import { CreateClientDialog } from "@/components/create-client-dialog";
+import { GeneratePlanButton } from "@/components/generate-plan-button";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
 import type { Profile, Task, Client } from "@/lib/types";
@@ -89,7 +90,12 @@ export default async function DashboardPage({
                     ` across ${clients?.length ?? 0} clients`}
                 </p>
               </div>
-              <CreateClientDialog />
+              <div className="flex items-center gap-2">
+                {activeClient && (
+                  <GeneratePlanButton clientId={activeClient.id} />
+                )}
+                <CreateClientDialog />
+              </div>
             </div>
             <StatCards tasks={tasks ?? []} />
             <TaskBoard tasks={tasks ?? []} />
