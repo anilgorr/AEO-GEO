@@ -34,7 +34,9 @@ export function CreateTaskDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button />}>New task</DialogTrigger>
+      <DialogTrigger render={<Button className="rounded-full" />}>
+        New task
+      </DialogTrigger>
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Create task</DialogTitle>

@@ -19,7 +19,7 @@ export function CreateClientDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button variant="outline" />}>
+      <DialogTrigger render={<Button variant="outline" className="rounded-full" />}>
         Add client
       </DialogTrigger>
       <DialogContent className="sm:max-w-md">

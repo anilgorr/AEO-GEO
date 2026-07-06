@@ -17,25 +17,23 @@ export function Header({
     .toUpperCase();
 
   return (
-    <header className="flex items-center justify-between border-b px-6 py-4">
+    <header className="flex items-center justify-between border-b border-border px-6 py-4">
       <div>
-        <h1 className="text-lg font-semibold">SEO / AEO / GEO Tasks</h1>
-        <p className="text-sm text-muted-foreground">
-          Create, assign, and track team progress
+        <p className="text-lg font-semibold tracking-tight">
+          Welcome back, {fullName.split(" ")[0]}
+        </p>
+        <p className="text-sm text-muted-foreground capitalize">
+          {role.replace("_", " ")}
         </p>
       </div>
       <div className="flex items-center gap-3">
-        <div className="text-right text-sm">
-          <p className="font-medium">{fullName}</p>
-          <p className="text-muted-foreground capitalize">
-            {role.replace("_", " ")}
-          </p>
-        </div>
-        <Avatar>
-          <AvatarFallback>{initials}</AvatarFallback>
+        <Avatar className="size-9">
+          <AvatarFallback className="bg-accent text-accent-foreground">
+            {initials}
+          </AvatarFallback>
         </Avatar>
         <form action={signOut}>
-          <Button variant="outline" size="sm" type="submit">
+          <Button variant="outline" size="sm" type="submit" className="rounded-full">
             Sign out
           </Button>
         </form>

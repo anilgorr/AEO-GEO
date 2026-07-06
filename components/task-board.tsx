@@ -13,44 +13,49 @@ import {
 } from "@/components/ui/select";
 import { TASK_STATUSES, type Task, type TaskStatus } from "@/lib/types";
 
-const TYPE_COLORS: Record<string, string> = {
-  seo: "bg-blue-100 text-blue-800",
-  aeo: "bg-purple-100 text-purple-800",
-  geo: "bg-fuchsia-100 text-fuchsia-800",
-  content: "bg-amber-100 text-amber-800",
-  technical: "bg-slate-200 text-slate-800",
-  off_page: "bg-emerald-100 text-emerald-800",
+const TYPE_DOT: Record<string, string> = {
+  seo: "bg-blue-600",
+  aeo: "bg-violet-600",
+  geo: "bg-fuchsia-600",
+  content: "bg-amber-500",
+  technical: "bg-slate-500",
+  off_page: "bg-emerald-600",
 };
+
+function Dot({ className }: { className: string }) {
+  return <span className={`inline-block size-1.5 rounded-full ${className}`} />;
+}
 
 function TaskCard({ task }: { task: Task }) {
   const [isPending, startTransition] = useTransition();
 
   return (
-    <Card className="mb-3">
-      <CardHeader className="space-y-2 pb-2">
+    <Card className="mb-3 gap-3 border-none py-4 shadow-sm">
+      <CardHeader className="space-y-2">
         <div className="flex items-start justify-between gap-2">
           <p className="text-sm font-medium leading-snug">{task.title}</p>
           {task.risk_tier === "high_impact" && (
-            <Badge variant="destructive" className="shrink-0">
+            <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-destructive">
+              <Dot className="bg-destructive" />
               High impact
-            </Badge>
+            </span>
           )}
         </div>
-        <div className="flex flex-wrap gap-1">
-          <Badge className={TYPE_COLORS[task.type]} variant="secondary">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <Dot className={TYPE_DOT[task.type]} />
             {task.type.toUpperCase()}
-          </Badge>
-          {task.target_platform && (
-            <Badge variant="outline">{task.target_platform}</Badge>
-          )}
+          </span>
+          {task.target_platform && <span>{task.target_platform}</span>}
           {task.approval_state === "pending" && (
-            <Badge variant="outline" className="border-amber-500 text-amber-700">
+            <span className="inline-flex items-center gap-1.5 text-amber-600">
+              <Dot className="bg-amber-500" />
               Awaiting approval
-            </Badge>
+            </span>
           )}
         </div>
       </CardHeader>
-      <CardContent className="space-y-2 pt-0 text-sm text-muted-foreground">
+      <CardContent className="space-y-1.5 text-sm text-muted-foreground">
         {task.clients?.name && <p>Client: {task.clients.name}</p>}
         {task.target_keyword && <p>Keyword: {task.target_keyword}</p>}
         {task.assignee?.full_name && (
@@ -67,7 +72,7 @@ function TaskCard({ task }: { task: Task }) {
             )
           }
         >
-          <SelectTrigger className="mt-2 h-8 text-xs">
+          <SelectTrigger className="mt-2 h-8 rounded-full text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -89,10 +94,12 @@ export function TaskBoard({ tasks }: { tasks: Task[] }) {
       {TASK_STATUSES.map((column) => {
         const columnTasks = tasks.filter((t) => t.status === column.value);
         return (
-          <div key={column.value} className="rounded-lg bg-muted/40 p-3">
-            <div className="mb-3 flex items-center justify-between">
+          <div key={column.value} className="rounded-2xl bg-muted/40 p-3">
+            <div className="mb-3 flex items-center justify-between px-1">
               <h2 className="text-sm font-semibold">{column.label}</h2>
-              <Badge variant="secondary">{columnTasks.length}</Badge>
+              <Badge variant="secondary" className="rounded-full">
+                {columnTasks.length}
+              </Badge>
             </div>
             {columnTasks.length === 0 && (
               <p className="text-xs text-muted-foreground">No tasks</p>
