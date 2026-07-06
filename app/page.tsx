@@ -4,8 +4,11 @@ import { Header } from "@/components/header";
 import { Sidebar } from "@/components/sidebar";
 import { StatCards } from "@/components/stat-cards";
 import { TaskBoard } from "@/components/task-board";
+import { DueThisWeek } from "@/components/due-this-week";
 import { CreateTaskDialog } from "@/components/create-task-dialog";
 import { CreateClientDialog } from "@/components/create-client-dialog";
+import { Button } from "@/components/ui/button";
+import { DialogTrigger } from "@/components/ui/dialog";
 import type { Profile, Task, Client } from "@/lib/types";
 
 export default async function DashboardPage({
@@ -49,34 +52,50 @@ export default async function DashboardPage({
 
   return (
     <div className="flex min-h-screen">
-      <Sidebar clients={clients ?? []} activeClientId={activeClientId} />
+      <Sidebar
+        clients={clients ?? []}
+        activeClientId={activeClientId}
+        newTaskTrigger={
+          <CreateTaskDialog
+            clients={clients ?? []}
+            employees={employees ?? []}
+            trigger={
+              <DialogTrigger
+                render={
+                  <Button className="w-full justify-center rounded-full bg-gradient-to-br from-blue-600 to-cyan-500" />
+                }
+              >
+                New task
+              </DialogTrigger>
+            }
+          />
+        }
+      />
       <div className="flex-1">
         <Header
           fullName={profile?.full_name ?? user.email ?? "User"}
           role={profile?.role ?? "seo_specialist"}
         />
-        <main className="p-6">
-          <div className="mb-6 flex items-center justify-between">
-            <div>
-              <h2 className="text-xl font-semibold tracking-tight">
-                {activeClient ? activeClient.name : "All clients"}
-              </h2>
-              <p className="text-sm text-muted-foreground">
-                {tasks?.length ?? 0} tasks
-                {!activeClientId && ` across ${clients?.length ?? 0} clients`}
-              </p>
-            </div>
-            <div className="flex gap-2">
+        <div className="flex gap-6 p-6">
+          <main className="min-w-0 flex-1">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold tracking-tight">
+                  {activeClient ? activeClient.name : "All clients"}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {tasks?.length ?? 0} tasks
+                  {!activeClientId &&
+                    ` across ${clients?.length ?? 0} clients`}
+                </p>
+              </div>
               <CreateClientDialog />
-              <CreateTaskDialog
-                clients={clients ?? []}
-                employees={employees ?? []}
-              />
             </div>
-          </div>
-          <StatCards tasks={tasks ?? []} />
-          <TaskBoard tasks={tasks ?? []} />
-        </main>
+            <StatCards tasks={tasks ?? []} />
+            <TaskBoard tasks={tasks ?? []} />
+          </main>
+          <DueThisWeek tasks={tasks ?? []} />
+        </div>
       </div>
     </div>
   );

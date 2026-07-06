@@ -25,18 +25,22 @@ import { TASK_TYPES, type Client, type Profile } from "@/lib/types";
 export function CreateTaskDialog({
   clients,
   employees,
+  trigger,
 }: {
   clients: Client[];
   employees: Profile[];
+  trigger?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={<Button className="rounded-full" />}>
-        New task
-      </DialogTrigger>
+      {trigger ?? (
+        <DialogTrigger render={<Button className="rounded-full" />}>
+          New task
+        </DialogTrigger>
+      )}
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Create task</DialogTitle>

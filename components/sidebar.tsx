@@ -19,26 +19,6 @@ function BuildingIcon() {
   );
 }
 
-function NavIconBadge({
-  active,
-  children,
-}: {
-  active: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <span
-      className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${
-        active
-          ? "bg-gradient-to-br from-blue-500 to-cyan-400 text-white shadow-sm"
-          : "bg-muted text-muted-foreground"
-      }`}
-    >
-      <span className="size-4">{children}</span>
-    </span>
-  );
-}
-
 function NavItem({
   href,
   active,
@@ -53,13 +33,13 @@ function NavItem({
   return (
     <Link
       href={href}
-      className={`flex items-center gap-3 rounded-2xl px-2.5 py-2 text-sm font-medium transition-all ${
+      className={`flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
         active
-          ? "bg-card text-foreground shadow-md"
-          : "text-muted-foreground hover:bg-card/60 hover:text-foreground"
+          ? "bg-primary text-primary-foreground"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground"
       }`}
     >
-      <NavIconBadge active={active}>{icon}</NavIconBadge>
+      <span className="size-4 shrink-0">{icon}</span>
       <span className="truncate">{children}</span>
     </Link>
   );
@@ -68,17 +48,21 @@ function NavItem({
 export function Sidebar({
   clients,
   activeClientId,
+  newTaskTrigger,
 }: {
   clients: Client[];
   activeClientId?: string;
+  newTaskTrigger: React.ReactNode;
 }) {
   return (
-    <aside className="hidden w-64 shrink-0 flex-col bg-muted/40 px-3 py-6 md:flex">
+    <aside className="hidden w-64 shrink-0 flex-col bg-sidebar px-3 py-6 md:flex">
       <div className="mb-8 flex items-center gap-2 px-3">
-        <div className="flex size-8 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 text-sm font-semibold text-white shadow-sm">
+        <div className="flex size-8 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 text-sm font-bold text-white">
           T
         </div>
-        <span className="text-sm font-semibold">Team Workspace</span>
+        <span className="text-base font-bold tracking-tight">
+          Team Workspace
+        </span>
       </div>
 
       <nav className="space-y-1">
@@ -87,10 +71,10 @@ export function Sidebar({
         </NavItem>
       </nav>
 
-      <p className="mt-8 mb-2 px-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+      <p className="mt-8 mb-2 px-3 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
         Clients
       </p>
-      <nav className="space-y-1">
+      <nav className="flex-1 space-y-1">
         <NavItem href="/" active={!activeClientId} icon={<BuildingIcon />}>
           All clients
         </NavItem>
@@ -105,6 +89,8 @@ export function Sidebar({
           </NavItem>
         ))}
       </nav>
+
+      {newTaskTrigger}
     </aside>
   );
 }

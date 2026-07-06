@@ -22,15 +22,35 @@ const TYPE_DOT: Record<string, string> = {
   off_page: "bg-emerald-600",
 };
 
+const TYPE_BORDER: Record<string, string> = {
+  seo: "border-l-blue-500",
+  aeo: "border-l-violet-500",
+  geo: "border-l-fuchsia-500",
+  content: "border-l-amber-500",
+  technical: "border-l-slate-400",
+  off_page: "border-l-emerald-500",
+};
+
 function Dot({ className }: { className: string }) {
   return <span className={`inline-block size-1.5 rounded-full ${className}`} />;
+}
+
+function initials(name: string) {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 }
 
 function TaskCard({ task }: { task: Task }) {
   const [isPending, startTransition] = useTransition();
 
   return (
-    <Card className="mb-3 gap-3 border-none py-4 shadow-sm">
+    <Card
+      className={`mb-3 gap-3 border-y-0 border-r-0 border-l-4 py-4 shadow-sm ${TYPE_BORDER[task.type]}`}
+    >
       <CardHeader className="space-y-2">
         <div className="flex items-start justify-between gap-2">
           <p className="text-sm font-medium leading-snug">{task.title}</p>
@@ -58,10 +78,22 @@ function TaskCard({ task }: { task: Task }) {
       <CardContent className="space-y-1.5 text-sm text-muted-foreground">
         {task.clients?.name && <p>Client: {task.clients.name}</p>}
         {task.target_keyword && <p>Keyword: {task.target_keyword}</p>}
-        {task.assignee?.full_name && (
-          <p>Assignee: {task.assignee.full_name}</p>
-        )}
         {task.due_date && <p>Due: {task.due_date}</p>}
+
+        <div className="flex items-center justify-between pt-1">
+          {task.assignee?.full_name ? (
+            <span className="flex items-center gap-2">
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+                {initials(task.assignee.full_name)}
+              </span>
+              <span className="truncate text-xs">
+                {task.assignee.full_name}
+              </span>
+            </span>
+          ) : (
+            <span className="text-xs italic">Unassigned</span>
+          )}
+        </div>
 
         <Select
           value={task.status}
@@ -72,7 +104,7 @@ function TaskCard({ task }: { task: Task }) {
             )
           }
         >
-          <SelectTrigger className="mt-2 h-8 rounded-full text-xs">
+          <SelectTrigger className="mt-1 h-8 rounded-full text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
