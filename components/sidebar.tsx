@@ -19,6 +19,52 @@ function BuildingIcon() {
   );
 }
 
+function NavIconBadge({
+  active,
+  children,
+}: {
+  active: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <span
+      className={`flex size-8 shrink-0 items-center justify-center rounded-lg ${
+        active
+          ? "bg-gradient-to-br from-blue-500 to-cyan-400 text-white shadow-sm"
+          : "bg-muted text-muted-foreground"
+      }`}
+    >
+      <span className="size-4">{children}</span>
+    </span>
+  );
+}
+
+function NavItem({
+  href,
+  active,
+  icon,
+  children,
+}: {
+  href: string;
+  active: boolean;
+  icon: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className={`flex items-center gap-3 rounded-2xl px-2.5 py-2 text-sm font-medium transition-all ${
+        active
+          ? "bg-card text-foreground shadow-md"
+          : "text-muted-foreground hover:bg-card/60 hover:text-foreground"
+      }`}
+    >
+      <NavIconBadge active={active}>{icon}</NavIconBadge>
+      <span className="truncate">{children}</span>
+    </Link>
+  );
+}
+
 export function Sidebar({
   clients,
   activeClientId,
@@ -27,58 +73,36 @@ export function Sidebar({
   activeClientId?: string;
 }) {
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-sidebar px-4 py-6 md:flex">
-      <div className="mb-8 flex items-center gap-2 px-2">
-        <div className="flex size-8 items-center justify-center rounded-xl bg-primary text-sm font-semibold text-primary-foreground">
+    <aside className="hidden w-64 shrink-0 flex-col bg-muted/40 px-3 py-6 md:flex">
+      <div className="mb-8 flex items-center gap-2 px-3">
+        <div className="flex size-8 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-cyan-400 text-sm font-semibold text-white shadow-sm">
           T
         </div>
         <span className="text-sm font-semibold">Team Workspace</span>
       </div>
 
       <nav className="space-y-1">
-        <Link
-          href="/"
-          className="flex items-center gap-2.5 rounded-xl bg-sidebar-accent px-3 py-2 text-sm font-medium text-sidebar-accent-foreground"
-        >
-          <span className="size-4">
-            <HomeIcon />
-          </span>
+        <NavItem href="/" active icon={<HomeIcon />}>
           Dashboard
-        </Link>
+        </NavItem>
       </nav>
 
       <p className="mt-8 mb-2 px-3 text-xs font-medium tracking-wide text-muted-foreground uppercase">
         Clients
       </p>
       <nav className="space-y-1">
-        <Link
-          href="/"
-          className={`flex items-center gap-2.5 rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
-            !activeClientId
-              ? "bg-sidebar-accent text-sidebar-accent-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-          }`}
-        >
-          <span className="size-4">
-            <BuildingIcon />
-          </span>
+        <NavItem href="/" active={!activeClientId} icon={<BuildingIcon />}>
           All clients
-        </Link>
+        </NavItem>
         {clients.map((client) => (
-          <Link
+          <NavItem
             key={client.id}
             href={`/?client=${client.id}`}
-            className={`flex items-center gap-2.5 truncate rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
-              activeClientId === client.id
-                ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
-            }`}
+            active={activeClientId === client.id}
+            icon={<BuildingIcon />}
           >
-            <span className="size-4">
-              <BuildingIcon />
-            </span>
-            <span className="truncate">{client.name}</span>
-          </Link>
+            {client.name}
+          </NavItem>
         ))}
       </nav>
     </aside>
