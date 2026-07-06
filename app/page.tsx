@@ -56,6 +56,7 @@ export default async function DashboardPage({
       <Sidebar
         clients={clients ?? []}
         activeClientId={activeClientId}
+        activePage="dashboard"
         newTaskTrigger={
           <CreateTaskDialog
             clients={clients ?? []}

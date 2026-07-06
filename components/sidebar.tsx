@@ -19,6 +19,15 @@ function BuildingIcon() {
   );
 }
 
+function ChartIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 19V9M12 19V5M20 19v-6" />
+      <path d="M2 19h20" />
+    </svg>
+  );
+}
+
 function NavItem({
   href,
   active,
@@ -48,10 +57,12 @@ function NavItem({
 export function Sidebar({
   clients,
   activeClientId,
+  activePage = "dashboard",
   newTaskTrigger,
 }: {
   clients: Client[];
   activeClientId?: string;
+  activePage?: "dashboard" | "monitoring";
   newTaskTrigger: React.ReactNode;
 }) {
   return (
@@ -66,8 +77,15 @@ export function Sidebar({
       </div>
 
       <nav className="space-y-1">
-        <NavItem href="/" active icon={<HomeIcon />}>
+        <NavItem href="/" active={activePage === "dashboard"} icon={<HomeIcon />}>
           Dashboard
+        </NavItem>
+        <NavItem
+          href="/monitoring"
+          active={activePage === "monitoring"}
+          icon={<ChartIcon />}
+        >
+          Monitoring
         </NavItem>
       </nav>
 
