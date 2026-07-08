@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/header";
 import { Sidebar } from "@/components/sidebar";
 import { StatCards } from "@/components/stat-cards";
-import { TaskBoard } from "@/components/task-board";
+import { PhaseTaskList, type PhasedTask } from "@/components/phase-task-list";
 import { DueThisWeek } from "@/components/due-this-week";
 import { CreateTaskDialog } from "@/components/create-task-dialog";
 import { CreateClientDialog } from "@/components/create-client-dialog";
@@ -11,7 +11,7 @@ import { GeneratePlanButton } from "@/components/generate-plan-button";
 import { ClientAgentsPanel } from "@/components/client-agents-panel";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
-import type { Profile, Task, Client } from "@/lib/types";
+import type { Profile, Client } from "@/lib/types";
 
 export default async function DashboardPage({
   searchParams,
@@ -35,9 +35,9 @@ export default async function DashboardPage({
   let taskQuery = supabase
     .from("tasks")
     .select(
-      "*, clients(id, name), assignee:profiles!tasks_assignee_id_fkey(id, full_name)"
+      "*, clients(id, name), assignee:profiles!tasks_assignee_id_fkey(id, full_name), template:task_templates(phase)"
     )
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: true });
 
   if (activeClientId) {
     taskQuery = taskQuery.eq("client_id", activeClientId);
@@ -45,7 +45,7 @@ export default async function DashboardPage({
 
   const [{ data: tasks }, { data: clients }, { data: employees }] =
     await Promise.all([
-      taskQuery.returns<Task[]>(),
+      taskQuery.returns<PhasedTask[]>(),
       supabase.from("clients").select("*").returns<Client[]>(),
       supabase.from("profiles").select("*").returns<Profile[]>(),
     ]);
@@ -101,7 +101,7 @@ export default async function DashboardPage({
             </div>
             {activeClient && <ClientAgentsPanel clientId={activeClient.id} />}
             <StatCards tasks={tasks ?? []} />
-            <TaskBoard tasks={tasks ?? []} />
+            <PhaseTaskList tasks={tasks ?? []} />
           </main>
           <DueThisWeek tasks={tasks ?? []} />
         </div>
