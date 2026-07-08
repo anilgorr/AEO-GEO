@@ -112,7 +112,9 @@ export async function approvePlanningProposals(
     .select();
   if (error) throw new Error(error.message);
 
-  // Trigger specialist agents for any approved task that named one
+  // Trigger specialist agents for any approved task that named one.
+  // A given specialist may not be built yet (or may fail) — that should
+  // never block the task itself from being created.
   for (let i = 0; i < approvedTasks.length; i++) {
     const targetAgent = approvedTasks[i].target_agent;
     const task = createdTasks?.[i];
@@ -122,7 +124,7 @@ export async function approvePlanningProposals(
         clientId,
         approvedTasks[i].description,
         task.id
-      );
+      ).catch(() => null);
     }
   }
 
@@ -148,15 +150,6 @@ export async function runSpecialistAgent(
   if (!user) throw new Error("Not authenticated");
 
   const systemPrompt = SPECIALIST_PROMPTS[agentType];
-  if (!systemPrompt) {
-    throw new Error(`Agent "${agentType}" isn't built yet.`);
-  }
-
-  const { data: client } = await supabase
-    .from("clients")
-    .select("name, website_url, industry")
-    .eq("id", clientId)
-    .single();
 
   const { data: runRow } = await supabase
     .from("agent_runs")
@@ -171,6 +164,21 @@ export async function runSpecialistAgent(
     .select()
     .single();
   if (!runRow) throw new Error("Failed to create agent run");
+
+  if (!systemPrompt) {
+    const message = `Agent "${agentType}" isn't built yet.`;
+    await supabase
+      .from("agent_runs")
+      .update({ status: "failed", error: message })
+      .eq("id", runRow.id);
+    return { runId: runRow.id as string, error: message };
+  }
+
+  const { data: client } = await supabase
+    .from("clients")
+    .select("name, website_url, industry")
+    .eq("id", clientId)
+    .single();
 
   const userContent = JSON.stringify({ client, brief });
 
