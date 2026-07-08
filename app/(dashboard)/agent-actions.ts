@@ -308,6 +308,37 @@ export async function runMonitoringAgent(clientId: string) {
   }
 }
 
+export async function createTaskFromSuggestion(
+  clientId: string,
+  title: string,
+  description: string,
+  type: string
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data: task, error } = await supabase
+    .from("tasks")
+    .insert({
+      client_id: clientId,
+      title: title.slice(0, 200),
+      description,
+      type,
+      priority: 3,
+      reporter_id: user.id,
+      content_stage: type === "content" ? "brief" : null,
+    })
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/");
+  return { taskId: task.id as string };
+}
+
 export async function updateAgentRunOutput(
   runId: string,
   editedOutput: string

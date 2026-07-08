@@ -83,6 +83,8 @@ export function OutputCard({ run }: { run: OutputRun }) {
           <AgentOutputView
             output={run.output}
             editedOutput={run.edited_output}
+            clientId={run.client_id}
+            agentType={run.agent_type}
           />
         )}
 

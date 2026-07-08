@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { updateTaskStatus } from "@/app/(dashboard)/tasks-actions";
 import { runSpecialistAgent } from "@/app/(dashboard)/agent-actions";
 import { AgentOutputView } from "@/components/agent-output-view";
+import { ChainToAgent } from "@/components/chain-to-agent";
+import { outputToText } from "@/lib/output-text";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -329,10 +331,29 @@ function TaskRow({ task, runs }: { task: PhasedTask; runs: TaskRun[] }) {
                   {run.status === "failed" ? (
                     <p className="text-sm text-destructive">{run.error}</p>
                   ) : (
-                    <AgentOutputView
-                      output={run.output}
-                      editedOutput={run.edited_output}
-                    />
+                    <>
+                      <AgentOutputView
+                        output={run.output}
+                        editedOutput={run.edited_output}
+                        clientId={task.client_id}
+                        agentType={run.agent_type}
+                      />
+                      {task.client_id && run.output && (
+                        <div className="mt-3 border-t border-border pt-3">
+                          <ChainToAgent
+                            clientId={task.client_id}
+                            taskId={task.id}
+                            sourceLabel={
+                              AGENT_LABELS[run.agent_type]?.label ??
+                              run.agent_type
+                            }
+                            sourceText={
+                              run.edited_output ?? outputToText(run.output)
+                            }
+                          />
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               ))}

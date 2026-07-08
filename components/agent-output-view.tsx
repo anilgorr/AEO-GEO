@@ -1,5 +1,12 @@
+"use client";
+
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { createTaskFromSuggestion } from "@/app/(dashboard)/agent-actions";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import type { AgentType, TaskType } from "@/lib/types";
 
 const SEVERITY_STYLES: Record<string, string> = {
   high: "bg-red-100 text-red-800",
@@ -13,6 +20,19 @@ const RISK_STYLES: Record<string, string> = {
   low: "bg-emerald-100 text-emerald-800",
 };
 
+// Default task type when creating a task from an item in this agent's output.
+const TASK_TYPE_BY_AGENT: Record<string, TaskType> = {
+  keyword: "seo",
+  onpage: "content",
+  audit: "technical",
+  schema: "technical",
+  geo: "geo",
+  offpage: "off_page",
+  sitemap: "technical",
+  planning: "seo",
+  monitoring: "seo",
+};
+
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
     <h4 className="mt-4 mb-1.5 text-xs font-semibold tracking-wide text-muted-foreground uppercase first:mt-0">
@@ -21,18 +41,72 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
+function CreateTaskButton({
+  clientId,
+  title,
+  description,
+  type,
+}: {
+  clientId: string;
+  title: string;
+  description: string;
+  type: TaskType;
+}) {
+  const router = useRouter();
+  const [isPending, startTransition] = useTransition();
+  const [created, setCreated] = useState(false);
+
+  if (created) {
+    return (
+      <Badge
+        variant="secondary"
+        className="shrink-0 rounded-full bg-emerald-100 text-xs text-emerald-800"
+      >
+        Task created ✓
+      </Badge>
+    );
+  }
+
+  return (
+    <Button
+      size="sm"
+      variant="outline"
+      className="h-7 shrink-0 rounded-full text-xs"
+      disabled={isPending}
+      onClick={() =>
+        startTransition(async () => {
+          await createTaskFromSuggestion(clientId, title, description, type);
+          setCreated(true);
+          router.refresh();
+        })
+      }
+    >
+      {isPending ? "Creating…" : "+ Create task"}
+    </Button>
+  );
+}
+
 /**
  * Renders an agent run's output. If the user has saved an edited version,
  * that text wins; otherwise the structured JSON is rendered as proper UI
- * per known agent output shape, with a readable fallback.
+ * per known agent output shape, with a readable fallback. When clientId is
+ * provided, every actionable item gets a "+ Create task" button carrying
+ * the full how-to (action + reasoning) into the task description.
  */
 export function AgentOutputView({
   output,
   editedOutput,
+  clientId,
+  agentType,
 }: {
   output: Record<string, unknown> | null;
   editedOutput?: string | null;
+  clientId?: string | null;
+  agentType?: AgentType | string;
 }) {
+  const defaultType: TaskType = TASK_TYPE_BY_AGENT[agentType ?? ""] ?? "seo";
+  const canCreate = Boolean(clientId);
+
   if (editedOutput) {
     return (
       <div className="space-y-2">
@@ -104,11 +178,27 @@ export function AgentOutputView({
             <div key={i} className="rounded-xl bg-muted/40 p-3">
               <div className="mb-1 flex items-center justify-between gap-2">
                 <p className="text-sm font-semibold">{c.name}</p>
-                {c.priority != null && (
-                  <Badge variant="secondary" className="rounded-full text-xs">
-                    P{c.priority}
-                  </Badge>
-                )}
+                <div className="flex items-center gap-2">
+                  {c.priority != null && (
+                    <Badge variant="secondary" className="rounded-full text-xs">
+                      P{c.priority}
+                    </Badge>
+                  )}
+                  {canCreate && (
+                    <CreateTaskButton
+                      clientId={clientId!}
+                      title={`Create content for cluster: ${c.name}`}
+                      description={[
+                        c.intent ? `Intent: ${c.intent}` : null,
+                        "Target queries:",
+                        ...(c.queries ?? []).map((q: string) => `- ${q}`),
+                      ]
+                        .filter(Boolean)
+                        .join("\n")}
+                      type="content"
+                    />
+                  )}
+                </div>
               </div>
               {c.intent && (
                 <p className="mb-1.5 text-xs text-muted-foreground">
@@ -152,6 +242,25 @@ export function AgentOutputView({
                   <Badge variant="outline" className="rounded-full text-xs">
                     needs live check
                   </Badge>
+                )}
+                {canCreate && (
+                  <span className="ml-auto">
+                    <CreateTaskButton
+                      clientId={clientId!}
+                      title={f.issue ?? f.finding ?? "Fix finding"}
+                      description={[
+                        f.issue ?? f.finding,
+                        f.suggestion ? `How: ${f.suggestion}` : null,
+                        f.area ? `Area: ${f.area}` : null,
+                        f.needs_live_check
+                          ? "Note: needs a live crawl/tool to confirm."
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join("\n\n")}
+                      type={defaultType}
+                    />
+                  </span>
                 )}
               </div>
               <p className="text-sm">{f.issue ?? f.finding}</p>
@@ -211,11 +320,24 @@ export function AgentOutputView({
     sections.push(
       <div key="toprecs">
         <SectionTitle>Top recommendations</SectionTitle>
-        <ul className="list-inside list-disc space-y-1 text-sm">
+        <div className="space-y-2">
           {o.top_recommendations.map((r: string, i: number) => (
-            <li key={i}>{r}</li>
+            <div
+              key={i}
+              className="flex items-start justify-between gap-2 rounded-xl bg-muted/40 p-3"
+            >
+              <p className="text-sm">{r}</p>
+              {canCreate && (
+                <CreateTaskButton
+                  clientId={clientId!}
+                  title={r}
+                  description={r}
+                  type={defaultType}
+                />
+              )}
+            </div>
           ))}
-        </ul>
+        </div>
       </div>
     );
   }
@@ -240,6 +362,22 @@ export function AgentOutputView({
                   >
                     not feasible
                   </Badge>
+                )}
+                {canCreate && r.feasible !== false && (
+                  <span className="ml-auto">
+                    <CreateTaskButton
+                      clientId={clientId!}
+                      title={r.action}
+                      description={[
+                        `How: ${r.action}`,
+                        r.reasoning ? `Why: ${r.reasoning}` : null,
+                        r.channel ? `Channel: ${r.channel}` : null,
+                      ]
+                        .filter(Boolean)
+                        .join("\n\n")}
+                      type="off_page"
+                    />
+                  </span>
                 )}
               </div>
               <p className="text-sm">{r.action}</p>
@@ -273,7 +411,17 @@ export function AgentOutputView({
   if (typeof o.jsonld === "string" && o.jsonld) {
     sections.push(
       <div key="jsonld">
-        <SectionTitle>JSON-LD</SectionTitle>
+        <div className="flex items-center justify-between">
+          <SectionTitle>JSON-LD</SectionTitle>
+          {canCreate && (
+            <CreateTaskButton
+              clientId={clientId!}
+              title="Implement generated JSON-LD schema"
+              description={`Add this JSON-LD to the page:\n\n${o.jsonld}`}
+              type="technical"
+            />
+          )}
+        </div>
         <pre className="max-h-64 overflow-auto rounded-xl bg-slate-950 p-3 text-xs leading-relaxed text-slate-100">
           {o.jsonld}
         </pre>
@@ -288,7 +436,27 @@ export function AgentOutputView({
         <div className="space-y-2">
           {o.recommended_structure.map((s: any, i: number) => (
             <div key={i} className="rounded-xl bg-muted/40 p-3">
-              <p className="font-mono text-sm font-medium">{s.url_pattern}</p>
+              <div className="flex items-start justify-between gap-2">
+                <p className="font-mono text-sm font-medium">
+                  {s.url_pattern}
+                </p>
+                {canCreate && (
+                  <CreateTaskButton
+                    clientId={clientId!}
+                    title={`Build section: ${s.url_pattern}`}
+                    description={[
+                      `URL pattern: ${s.url_pattern}`,
+                      `Purpose: ${s.purpose}`,
+                      Array.isArray(s.links_to) && s.links_to.length
+                        ? `Internal links to: ${s.links_to.join(", ")}`
+                        : null,
+                    ]
+                      .filter(Boolean)
+                      .join("\n")}
+                    type="technical"
+                  />
+                )}
+              </div>
               <p className="mt-0.5 text-sm text-muted-foreground">
                 {s.purpose}
               </p>
@@ -308,19 +476,34 @@ export function AgentOutputView({
     sections.push(
       <div key="actions">
         <SectionTitle>Recommended actions</SectionTitle>
-        <ul className="space-y-1.5">
+        <div className="space-y-2">
           {o.recommended_actions.map((a: any, i: number) => (
-            <li key={i} className="flex items-start gap-2 text-sm">
-              <span className="mt-1.5 size-1.5 shrink-0 rounded-full bg-primary" />
-              <span>
+            <div
+              key={i}
+              className="flex items-start justify-between gap-2 rounded-xl bg-muted/40 p-3"
+            >
+              <p className="text-sm">
                 {a.action}
                 {a.handler && (
                   <span className="text-muted-foreground"> — {a.handler}</span>
                 )}
-              </span>
-            </li>
+              </p>
+              {canCreate && (
+                <CreateTaskButton
+                  clientId={clientId!}
+                  title={a.action}
+                  description={[
+                    a.action,
+                    a.handler ? `Suggested handler: ${a.handler}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join("\n\n")}
+                  type={defaultType}
+                />
+              )}
+            </div>
           ))}
-        </ul>
+        </div>
       </div>
     );
   }
@@ -340,6 +523,18 @@ export function AgentOutputView({
                   <Badge variant="outline" className="rounded-full text-xs">
                     P{t.priority}
                   </Badge>
+                )}
+                {canCreate && (
+                  <span className="ml-auto">
+                    <CreateTaskButton
+                      clientId={clientId!}
+                      title={t.title}
+                      description={[t.description, t.rationale ? `Why: ${t.rationale}` : null]
+                        .filter(Boolean)
+                        .join("\n\n")}
+                      type={t.type ?? defaultType}
+                    />
+                  </span>
                 )}
               </div>
               <p className="text-sm font-medium">{t.title}</p>
