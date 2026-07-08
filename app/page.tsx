@@ -4,6 +4,7 @@ import { Header } from "@/components/header";
 import { Sidebar } from "@/components/sidebar";
 import { StatCards } from "@/components/stat-cards";
 import { PhaseTaskList, type PhasedTask } from "@/components/phase-task-list";
+import type { TaskRunSummary } from "@/components/task-agent-runner";
 import { DueThisWeek } from "@/components/due-this-week";
 import { CreateTaskDialog } from "@/components/create-task-dialog";
 import { CreateClientDialog } from "@/components/create-client-dialog";
@@ -51,6 +52,23 @@ export default async function DashboardPage({
     ]);
 
   const activeClient = clients?.find((c) => c.id === activeClientId);
+
+  // Latest saved agent output per task (runs are ordered newest-first,
+  // so the first run seen for a task wins).
+  const taskIds = (tasks ?? []).map((t) => t.id);
+  const runsByTask: Record<string, TaskRunSummary> = {};
+  if (taskIds.length > 0) {
+    const { data: runs } = await supabase
+      .from("agent_runs")
+      .select("task_id, agent_type, status, output, error")
+      .in("task_id", taskIds)
+      .order("created_at", { ascending: false });
+    for (const run of runs ?? []) {
+      if (run.task_id && !runsByTask[run.task_id]) {
+        runsByTask[run.task_id] = run as unknown as TaskRunSummary;
+      }
+    }
+  }
 
   return (
     <div className="flex min-h-screen">
@@ -101,7 +119,7 @@ export default async function DashboardPage({
             </div>
             {activeClient && <ClientAgentsPanel clientId={activeClient.id} />}
             <StatCards tasks={tasks ?? []} />
-            <PhaseTaskList tasks={tasks ?? []} />
+            <PhaseTaskList tasks={tasks ?? []} runsByTask={runsByTask} />
           </main>
           <DueThisWeek tasks={tasks ?? []} />
         </div>

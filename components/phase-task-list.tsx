@@ -2,15 +2,12 @@
 
 import { useTransition } from "react";
 import { updateTaskStatus } from "@/app/(dashboard)/tasks-actions";
-import { Badge } from "@/components/ui/badge";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { TASK_STATUSES, type Task, type TaskStatus } from "@/lib/types";
+  TaskAgentRunner,
+  type TaskRunSummary,
+} from "@/components/task-agent-runner";
+import { Badge } from "@/components/ui/badge";
+import type { Task } from "@/lib/types";
 
 const PHASE_LABELS: Record<string, string> = {
   "0_onboarding": "Phase 0 — Onboarding & Baseline Audit",
@@ -43,37 +40,44 @@ const TYPE_DOT: Record<string, string> = {
   off_page: "bg-emerald-600",
 };
 
-const STATUS_STYLES: Record<string, string> = {
-  todo: "bg-slate-100 text-slate-700",
-  in_progress: "bg-blue-100 text-blue-800",
-  review: "bg-amber-100 text-amber-800",
-  done: "bg-emerald-100 text-emerald-800",
-};
-
 export interface PhasedTask extends Task {
   template?: { phase: string } | null;
 }
 
-function initials(name: string) {
-  return name
-    .split(" ")
-    .map((part) => part[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
-
-function TaskRow({ task }: { task: PhasedTask }) {
+function TaskRow({
+  task,
+  latestRun,
+}: {
+  task: PhasedTask;
+  latestRun: TaskRunSummary | null;
+}) {
   const [isPending, startTransition] = useTransition();
+  const done = task.status === "done";
 
   return (
-    <div className="flex items-center gap-4 border-b border-border px-4 py-3 last:border-b-0 hover:bg-muted/30">
+    <div className="flex items-center gap-3 border-b border-border px-4 py-3 last:border-b-0 hover:bg-muted/30">
+      <input
+        type="checkbox"
+        checked={done}
+        disabled={isPending}
+        onChange={(e) =>
+          startTransition(() =>
+            updateTaskStatus(task.id, e.target.checked ? "done" : "todo")
+          )
+        }
+        className="size-4 shrink-0 cursor-pointer accent-primary"
+        title={done ? "Mark as to do" : "Mark as done"}
+      />
       <span
         className={`size-2 shrink-0 rounded-full ${TYPE_DOT[task.type] ?? "bg-slate-400"}`}
         title={task.type}
       />
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium">{task.title}</p>
+        <p
+          className={`truncate text-sm font-medium ${done ? "text-muted-foreground line-through" : ""}`}
+        >
+          {task.title}
+        </p>
         <p className="truncate text-xs text-muted-foreground">
           {task.type.toUpperCase()}
           {task.target_keyword ? ` · ${task.target_keyword}` : ""}
@@ -81,45 +85,27 @@ function TaskRow({ task }: { task: PhasedTask }) {
           {task.risk_tier === "high_impact" ? " · HIGH IMPACT" : ""}
         </p>
       </div>
-      <div className="hidden shrink-0 items-center gap-2 sm:flex">
-        {task.assignee?.full_name ? (
-          <span
-            className="flex size-6 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground"
-            title={task.assignee.full_name}
-          >
-            {initials(task.assignee.full_name)}
-          </span>
-        ) : (
-          <span className="text-xs text-muted-foreground italic">
-            Unassigned
-          </span>
-        )}
-      </div>
-      <Select
-        value={task.status}
-        disabled={isPending}
-        onValueChange={(value) =>
-          startTransition(() => updateTaskStatus(task.id, value as TaskStatus))
-        }
-      >
-        <SelectTrigger
-          className={`h-7 w-32 shrink-0 rounded-full border-none text-xs font-medium ${STATUS_STYLES[task.status]}`}
-        >
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {TASK_STATUSES.map((s) => (
-            <SelectItem key={s.value} value={s.value}>
-              {s.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      {task.client_id && (
+        <TaskAgentRunner
+          taskId={task.id}
+          clientId={task.client_id}
+          taskTitle={task.title}
+          taskDescription={task.description}
+          taskType={task.type}
+          latestRun={latestRun}
+        />
+      )}
     </div>
   );
 }
 
-export function PhaseTaskList({ tasks }: { tasks: PhasedTask[] }) {
+export function PhaseTaskList({
+  tasks,
+  runsByTask = {},
+}: {
+  tasks: PhasedTask[];
+  runsByTask?: Record<string, TaskRunSummary>;
+}) {
   const grouped = new Map<string, PhasedTask[]>();
   for (const task of tasks) {
     const phase = task.template?.phase ?? "custom";
@@ -155,7 +141,11 @@ export function PhaseTaskList({ tasks }: { tasks: PhasedTask[] }) {
             </div>
             <div className="overflow-hidden rounded-2xl bg-card shadow-sm">
               {phaseTasks.map((task) => (
-                <TaskRow key={task.id} task={task} />
+                <TaskRow
+                  key={task.id}
+                  task={task}
+                  latestRun={runsByTask[task.id] ?? null}
+                />
               ))}
             </div>
           </section>
