@@ -1,56 +1,57 @@
-const CLAUDE_MODEL = "claude-sonnet-4-5";
+const AGENT_MODEL = "anthropic/claude-sonnet-4.5";
 
 export class AgentUnavailableError extends Error {
   constructor() {
-    super("ANTHROPIC_API_KEY is not configured — agents are unavailable.");
+    super("OPENROUTER_API_KEY is not configured — agents are unavailable.");
     this.name = "AgentUnavailableError";
   }
 }
 
 /**
- * Calls Claude with a system prompt + user content and returns the raw
- * text response. Callers that need structured output should instruct the
- * agent (in the system prompt) to respond with JSON only, then parse it.
+ * Calls the agent model (via OpenRouter) with a system prompt + user
+ * content and returns the raw text response. Callers that need structured
+ * output should instruct the agent (in the system prompt) to respond with
+ * JSON only, then parse it with callClaudeJSON below.
  */
 export async function callClaude(
   systemPrompt: string,
   userContent: string
 ): Promise<string> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.OPENROUTER_API_KEY;
   if (!apiKey) throw new AgentUnavailableError();
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: {
-      "x-api-key": apiKey,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": "https://aeo-geo-beta.vercel.app",
+      "X-Title": "SEO/AEO/GEO Team Tool",
     },
     body: JSON.stringify({
-      model: CLAUDE_MODEL,
+      model: AGENT_MODEL,
       max_tokens: 4096,
-      system: systemPrompt,
-      messages: [{ role: "user", content: userContent }],
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userContent },
+      ],
     }),
   });
 
   if (!res.ok) {
-    throw new Error(`Anthropic API error: ${res.status} ${await res.text()}`);
+    throw new Error(`OpenRouter API error: ${res.status} ${await res.text()}`);
   }
 
   const data = await res.json();
-  const text = data.content
-    ?.filter((block: { type: string }) => block.type === "text")
-    .map((block: { text: string }) => block.text)
-    .join("\n");
+  const text = data.choices?.[0]?.message?.content;
 
-  if (!text) throw new Error("Claude returned no text content");
+  if (!text) throw new Error("Agent model returned no text content");
   return text;
 }
 
 /**
- * Calls Claude and parses the response as JSON. Strips markdown code
- * fences if the model wraps its JSON output in ```json ... ```.
+ * Calls the agent model and parses the response as JSON. Strips markdown
+ * code fences if the model wraps its JSON output in ```json ... ```.
  */
 export async function callClaudeJSON<T>(
   systemPrompt: string,
