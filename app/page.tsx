@@ -60,7 +60,7 @@ export default async function DashboardPage({
   if (taskIds.length > 0) {
     const { data: runs } = await supabase
       .from("agent_runs")
-      .select("task_id, agent_type, status, output, error")
+      .select("task_id, agent_type, status, output, edited_output, error")
       .in("task_id", taskIds)
       .order("created_at", { ascending: false });
     for (const run of runs ?? []) {

@@ -36,6 +36,15 @@ function SparkleIcon() {
   );
 }
 
+function DocumentIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8z" />
+      <path d="M14 3v5h5M9 13h6M9 17h6" />
+    </svg>
+  );
+}
+
 function NavItem({
   href,
   active,
@@ -70,7 +79,7 @@ export function Sidebar({
 }: {
   clients: Client[];
   activeClientId?: string;
-  activePage?: "dashboard" | "monitoring" | "agents";
+  activePage?: "dashboard" | "monitoring" | "agents" | "outputs";
   newTaskTrigger: React.ReactNode;
 }) {
   return (
@@ -101,6 +110,13 @@ export function Sidebar({
           icon={<SparkleIcon />}
         >
           Agents
+        </NavItem>
+        <NavItem
+          href="/outputs"
+          active={activePage === "outputs"}
+          icon={<DocumentIcon />}
+        >
+          Outputs
         </NavItem>
       </nav>
 

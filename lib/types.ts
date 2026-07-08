@@ -91,6 +91,7 @@ export interface AgentRun {
   task_id: string | null;
   input: Record<string, unknown>;
   output: PlanningAgentOutput | Record<string, unknown> | null;
+  edited_output: string | null;
   status: AgentRunStatus;
   error: string | null;
   requested_by: string | null;

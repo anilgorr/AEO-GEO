@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { runSpecialistAgent } from "@/app/(dashboard)/agent-actions";
+import { AgentOutputView } from "@/components/agent-output-view";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -46,6 +48,7 @@ export interface TaskRunSummary {
   agent_type: AgentType;
   status: string;
   output: Record<string, unknown> | null;
+  edited_output?: string | null;
   error?: string | null;
 }
 
@@ -70,31 +73,36 @@ export function TaskAgentRunner({
   const [agentType, setAgentType] = useState<AgentType>(
     DEFAULT_AGENT_BY_TYPE[taskType]
   );
-  const [liveOutput, setLiveOutput] = useState<string | null>(null);
+  const [liveOutput, setLiveOutput] = useState<Record<
+    string,
+    unknown
+  > | null>(null);
+  const [liveError, setLiveError] = useState<string | null>(null);
 
-  const savedOutput =
-    latestRun?.status === "completed" && latestRun.output
-      ? JSON.stringify(latestRun.output, null, 2)
-      : null;
+  const hasSaved = latestRun?.status === "completed" && !!latestRun.output;
+  const displayOutput = liveOutput ?? (hasSaved ? latestRun!.output : null);
 
   return (
     <Dialog
       open={open}
       onOpenChange={(next) => {
         setOpen(next);
-        if (!next) setLiveOutput(null);
+        if (!next) {
+          setLiveOutput(null);
+          setLiveError(null);
+        }
       }}
     >
       <DialogTrigger
         render={
           <Button
             size="sm"
-            variant={savedOutput ? "secondary" : "outline"}
+            variant={hasSaved ? "secondary" : "outline"}
             className="shrink-0 rounded-full text-xs"
           />
         }
       >
-        {savedOutput
+        {hasSaved
           ? `Output · ${AGENT_LABELS[latestRun!.agent_type].label}`
           : "Run agent"}
       </DialogTrigger>
@@ -109,17 +117,18 @@ export function TaskAgentRunner({
           action={(formData) => {
             const brief = formData.get("brief") as string;
             startTransition(async () => {
+              setLiveError(null);
               const result = await runSpecialistAgent(
                 agentType,
                 clientId,
                 brief,
                 taskId
               );
-              setLiveOutput(
-                result.error
-                  ? `Error: ${result.error}`
-                  : JSON.stringify(result.output, null, 2)
-              );
+              if (result.error) {
+                setLiveError(result.error);
+              } else {
+                setLiveOutput(result.output ?? null);
+              }
               router.refresh();
             });
           }}
@@ -158,22 +167,31 @@ export function TaskAgentRunner({
           </div>
 
           <Button type="submit" className="w-full" disabled={isPending}>
-            {isPending
-              ? "Running…"
-              : savedOutput
-                ? "Re-run agent"
-                : "Run agent"}
+            {isPending ? "Running…" : hasSaved ? "Re-run agent" : "Run agent"}
           </Button>
         </form>
 
-        {(liveOutput ?? savedOutput) && (
-          <div className="space-y-1">
-            <p className="text-xs font-medium text-muted-foreground">
-              {liveOutput ? "Latest output" : "Saved output"}
-            </p>
-            <pre className="max-h-72 overflow-auto rounded-lg bg-muted p-3 text-xs whitespace-pre-wrap">
-              {liveOutput ?? savedOutput}
-            </pre>
+        {liveError && <p className="text-sm text-destructive">{liveError}</p>}
+
+        {displayOutput && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-medium text-muted-foreground">
+                {liveOutput ? "Latest output" : "Saved output"}
+              </p>
+              <Link
+                href={`/outputs?client=${clientId}`}
+                className="text-xs font-medium text-accent-foreground hover:underline"
+              >
+                Open in Outputs →
+              </Link>
+            </div>
+            <div className="rounded-xl border border-border p-3">
+              <AgentOutputView
+                output={displayOutput}
+                editedOutput={liveOutput ? null : latestRun?.edited_output}
+              />
+            </div>
           </div>
         )}
       </DialogContent>

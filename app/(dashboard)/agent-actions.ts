@@ -308,6 +308,26 @@ export async function runMonitoringAgent(clientId: string) {
   }
 }
 
+export async function updateAgentRunOutput(
+  runId: string,
+  editedOutput: string
+) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { error } = await supabase
+    .from("agent_runs")
+    .update({ edited_output: editedOutput.trim() || null })
+    .eq("id", runId);
+  if (error) throw new Error(error.message);
+
+  revalidatePath("/outputs");
+  revalidatePath("/");
+}
+
 export async function triggerOnboardingFlow(clientId: string) {
   const supabase = await createClient();
   const { data: templates } = await supabase
