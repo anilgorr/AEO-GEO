@@ -3,8 +3,11 @@ import { createClient } from "@/lib/supabase/server";
 import { Header } from "@/components/header";
 import { Sidebar } from "@/components/sidebar";
 import { StatCards } from "@/components/stat-cards";
-import { PhaseTaskList, type PhasedTask } from "@/components/phase-task-list";
-import type { TaskRunSummary } from "@/components/task-agent-runner";
+import {
+  PhaseTaskList,
+  type PhasedTask,
+  type TaskRun,
+} from "@/components/phase-task-list";
 import { DueThisWeek } from "@/components/due-this-week";
 import { CreateTaskDialog } from "@/components/create-task-dialog";
 import { CreateClientDialog } from "@/components/create-client-dialog";
@@ -53,20 +56,20 @@ export default async function DashboardPage({
 
   const activeClient = clients?.find((c) => c.id === activeClientId);
 
-  // Latest saved agent output per task (runs are ordered newest-first,
-  // so the first run seen for a task wins).
+  // Full agent run history per task, newest first.
   const taskIds = (tasks ?? []).map((t) => t.id);
-  const runsByTask: Record<string, TaskRunSummary> = {};
+  const runsByTask: Record<string, TaskRun[]> = {};
   if (taskIds.length > 0) {
     const { data: runs } = await supabase
       .from("agent_runs")
-      .select("task_id, agent_type, status, output, edited_output, error")
+      .select(
+        "id, task_id, agent_type, status, output, edited_output, error, created_at"
+      )
       .in("task_id", taskIds)
       .order("created_at", { ascending: false });
     for (const run of runs ?? []) {
-      if (run.task_id && !runsByTask[run.task_id]) {
-        runsByTask[run.task_id] = run as unknown as TaskRunSummary;
-      }
+      if (!run.task_id) continue;
+      (runsByTask[run.task_id] ??= []).push(run as unknown as TaskRun);
     }
   }
 
