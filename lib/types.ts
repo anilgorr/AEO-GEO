@@ -44,13 +44,70 @@ export interface OnboardingAnswers {
   notes: string | null;
 }
 
+export type ClientStatus = "active" | "paused" | "archived";
+export type EngagementType = "ongoing" | "audit_only";
+
 export interface Client {
   id: string;
   name: string;
   website_url: string | null;
   industry: string | null;
+  status: ClientStatus;
+  engagement_type: EngagementType;
   onboarding_answers?: OnboardingAnswers | null;
 }
+
+export type AgentType =
+  | "planning"
+  | "monitoring"
+  | "keyword"
+  | "onpage"
+  | "audit"
+  | "schema"
+  | "geo"
+  | "offpage"
+  | "sitemap";
+
+export type AgentRunStatus = "running" | "completed" | "failed";
+
+export interface ProposedTask {
+  title: string;
+  description: string;
+  type: TaskType;
+  target_agent: AgentType | null;
+  rationale: string;
+  priority: number;
+}
+
+export interface PlanningAgentOutput {
+  summary: string;
+  proposed_tasks: ProposedTask[];
+}
+
+export interface AgentRun {
+  id: string;
+  agent_type: AgentType;
+  client_id: string | null;
+  task_id: string | null;
+  input: Record<string, unknown>;
+  output: PlanningAgentOutput | Record<string, unknown> | null;
+  status: AgentRunStatus;
+  error: string | null;
+  requested_by: string | null;
+  created_at: string;
+}
+
+export const AGENT_LABELS: Record<AgentType, { label: string; description: string }> = {
+  planning: { label: "Planning Agent", description: "Reviews client state and proposes a prioritized task list" },
+  monitoring: { label: "Monitoring Agent", description: "Reviews progress and visibility data, produces a status digest" },
+  keyword: { label: "Keyword Agent", description: "Seed expansion, topic clustering, prioritization" },
+  onpage: { label: "On-Page Agent", description: "Citability review and content rewrite suggestions" },
+  audit: { label: "Audit Agent", description: "Technical crawl/index/Core Web Vitals audit" },
+  schema: { label: "Schema Agent", description: "Structured data generation and validation" },
+  geo: { label: "GEO/Citation Agent", description: "Citability scoring and AI-visibility diagnosis" },
+  offpage: { label: "Off-Page/Entity Agent", description: "Brand entity-building recommendations" },
+  sitemap: { label: "Sitemap Agent", description: "Site structure and internal linking recommendations" },
+};
 
 export interface Task {
   id: string;

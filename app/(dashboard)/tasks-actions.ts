@@ -106,17 +106,22 @@ export async function createClientRecord(formData: FormData) {
     notes: (formData.get("notes") as string) || null,
   };
 
-  const { error } = await supabase.from("clients").insert({
-    name: formData.get("name"),
-    website_url: (formData.get("website_url") as string) || null,
-    industry: (formData.get("industry") as string) || null,
-    created_by: user.id,
-    onboarding_answers: onboardingAnswers,
-  });
+  const { data: newClient, error } = await supabase
+    .from("clients")
+    .insert({
+      name: formData.get("name"),
+      website_url: (formData.get("website_url") as string) || null,
+      industry: (formData.get("industry") as string) || null,
+      created_by: user.id,
+      onboarding_answers: onboardingAnswers,
+    })
+    .select()
+    .single();
 
   if (error) throw new Error(error.message);
 
   revalidatePath("/");
+  return { clientId: newClient.id as string };
 }
 
 export async function generatePlanForClient(clientId: string) {

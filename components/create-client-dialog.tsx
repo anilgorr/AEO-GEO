@@ -2,6 +2,7 @@
 
 import { useRef, useState } from "react";
 import { createClientRecord } from "@/app/(dashboard)/tasks-actions";
+import { triggerOnboardingFlow } from "@/app/(dashboard)/agent-actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,9 +53,10 @@ export function CreateClientDialog() {
         <form
           ref={formRef}
           action={async (formData) => {
-            await createClientRecord(formData);
+            const { clientId } = await createClientRecord(formData);
             formRef.current?.reset();
             setOpen(false);
+            await triggerOnboardingFlow(clientId);
           }}
           className="space-y-4"
         >
