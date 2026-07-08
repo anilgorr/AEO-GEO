@@ -25,10 +25,14 @@ export function AgentTriggerDialog({
   agentType,
   agentLabel,
   clients,
+  clientId: fixedClientId,
+  trigger,
 }: {
   agentType: AgentType;
   agentLabel: string;
-  clients: Client[];
+  clients?: Client[];
+  clientId?: string;
+  trigger?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
@@ -43,9 +47,11 @@ export function AgentTriggerDialog({
         if (!next) setOutput(null);
       }}
     >
-      <DialogTrigger render={<Button size="sm" className="rounded-full" />}>
-        Run
-      </DialogTrigger>
+      {trigger ?? (
+        <DialogTrigger render={<Button size="sm" className="rounded-full" />}>
+          Run
+        </DialogTrigger>
+      )}
       <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{agentLabel}</DialogTitle>
@@ -53,7 +59,8 @@ export function AgentTriggerDialog({
         <form
           ref={formRef}
           action={(formData) => {
-            const clientId = formData.get("client_id") as string;
+            const clientId =
+              fixedClientId ?? (formData.get("client_id") as string);
             const brief = formData.get("brief") as string;
             startTransition(async () => {
               const result = await runSpecialistAgent(
@@ -70,21 +77,23 @@ export function AgentTriggerDialog({
           }}
           className="space-y-4"
         >
-          <div className="space-y-2">
-            <Label htmlFor="client_id">Client</Label>
-            <Select name="client_id" required>
-              <SelectTrigger id="client_id">
-                <SelectValue placeholder="Select a client" />
-              </SelectTrigger>
-              <SelectContent>
-                {clients.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {!fixedClientId && (
+            <div className="space-y-2">
+              <Label htmlFor="client_id">Client</Label>
+              <Select name="client_id" required>
+                <SelectTrigger id="client_id">
+                  <SelectValue placeholder="Select a client" />
+                </SelectTrigger>
+                <SelectContent>
+                  {clients?.map((c) => (
+                    <SelectItem key={c.id} value={c.id}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="brief">Task / brief</Label>
             <Textarea

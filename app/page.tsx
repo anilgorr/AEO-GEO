@@ -8,6 +8,7 @@ import { DueThisWeek } from "@/components/due-this-week";
 import { CreateTaskDialog } from "@/components/create-task-dialog";
 import { CreateClientDialog } from "@/components/create-client-dialog";
 import { GeneratePlanButton } from "@/components/generate-plan-button";
+import { ClientAgentsPanel } from "@/components/client-agents-panel";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
 import type { Profile, Task, Client } from "@/lib/types";
@@ -98,6 +99,7 @@ export default async function DashboardPage({
                 <CreateClientDialog />
               </div>
             </div>
+            {activeClient && <ClientAgentsPanel clientId={activeClient.id} />}
             <StatCards tasks={tasks ?? []} />
             <TaskBoard tasks={tasks ?? []} />
           </main>
