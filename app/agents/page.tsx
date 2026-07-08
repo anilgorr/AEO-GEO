@@ -10,8 +10,26 @@ import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { AGENT_LABELS, type AgentType, type Client, type Profile } from "@/lib/types";
 
-const BUILT_AGENTS: AgentType[] = ["planning", "monitoring", "keyword", "onpage"];
-const CALLABLE_AGENTS: AgentType[] = ["keyword", "onpage"];
+const BUILT_AGENTS: AgentType[] = [
+  "planning",
+  "monitoring",
+  "keyword",
+  "onpage",
+  "audit",
+  "schema",
+  "geo",
+  "offpage",
+  "sitemap",
+];
+const CALLABLE_AGENTS: AgentType[] = [
+  "keyword",
+  "onpage",
+  "audit",
+  "schema",
+  "geo",
+  "offpage",
+  "sitemap",
+];
 
 export default async function AgentsPage() {
   const supabase = await createClient();

@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/sidebar";
 import { TrackedPhrases } from "@/components/tracked-phrases";
 import { VisibilityDashboard } from "@/components/visibility-dashboard";
 import { RunCitationCheckButton } from "@/components/run-citation-check-button";
+import { MonitoringAgentPanel } from "@/components/monitoring-agent-panel";
 import { CreateTaskDialog } from "@/components/create-task-dialog";
 import { Button } from "@/components/ui/button";
 import { DialogTrigger } from "@/components/ui/dialog";
@@ -112,6 +113,7 @@ export default async function MonitoringPage({
               <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                 <TrackedPhrases clientId={activeClient.id} phrases={phrases} />
                 <VisibilityDashboard checks={checks} />
+                <MonitoringAgentPanel clientId={activeClient.id} />
               </div>
             </>
           )}

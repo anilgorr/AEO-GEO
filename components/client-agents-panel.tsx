@@ -9,7 +9,15 @@ import { Card, CardContent } from "@/components/ui/card";
 import { DialogTrigger } from "@/components/ui/dialog";
 import { AGENT_LABELS, type AgentType } from "@/lib/types";
 
-const CALLABLE_AGENTS: AgentType[] = ["keyword", "onpage"];
+const CALLABLE_AGENTS: AgentType[] = [
+  "keyword",
+  "onpage",
+  "audit",
+  "schema",
+  "geo",
+  "offpage",
+  "sitemap",
+];
 
 export function ClientAgentsPanel({ clientId }: { clientId: string }) {
   const router = useRouter();

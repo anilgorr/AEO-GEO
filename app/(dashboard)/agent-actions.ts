@@ -8,6 +8,12 @@ import {
   PLANNING_AGENT_SYSTEM_PROMPT,
   KEYWORD_AGENT_SYSTEM_PROMPT,
   ONPAGE_AGENT_SYSTEM_PROMPT,
+  AUDIT_AGENT_SYSTEM_PROMPT,
+  SCHEMA_AGENT_SYSTEM_PROMPT,
+  GEO_AGENT_SYSTEM_PROMPT,
+  OFFPAGE_AGENT_SYSTEM_PROMPT,
+  SITEMAP_AGENT_SYSTEM_PROMPT,
+  MONITORING_AGENT_SYSTEM_PROMPT,
 } from "@/lib/agent-prompts";
 import type { PlanningAgentOutput, ProposedTask } from "@/lib/types";
 
@@ -135,6 +141,11 @@ export async function approvePlanningProposals(
 const SPECIALIST_PROMPTS: Partial<Record<string, string>> = {
   keyword: KEYWORD_AGENT_SYSTEM_PROMPT,
   onpage: ONPAGE_AGENT_SYSTEM_PROMPT,
+  audit: AUDIT_AGENT_SYSTEM_PROMPT,
+  schema: SCHEMA_AGENT_SYSTEM_PROMPT,
+  geo: GEO_AGENT_SYSTEM_PROMPT,
+  offpage: OFFPAGE_AGENT_SYSTEM_PROMPT,
+  sitemap: SITEMAP_AGENT_SYSTEM_PROMPT,
 };
 
 export async function runSpecialistAgent(
@@ -192,6 +203,100 @@ export async function runSpecialistAgent(
       .update({ status: "completed", output })
       .eq("id", runRow.id);
     revalidatePath("/agents");
+    return { runId: runRow.id as string, output };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    await supabase
+      .from("agent_runs")
+      .update({ status: "failed", error: message })
+      .eq("id", runRow.id);
+    return { runId: runRow.id as string, error: message };
+  }
+}
+
+export async function runMonitoringAgent(clientId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error("Not authenticated");
+
+  const { data: client } = await supabase
+    .from("clients")
+    .select("name")
+    .eq("id", clientId)
+    .single();
+  if (!client) throw new Error("Client not found");
+
+  const { data: tasks } = await supabase
+    .from("tasks")
+    .select("status, due_date, content_stage")
+    .eq("client_id", clientId);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const statusCounts = { todo: 0, in_progress: 0, review: 0, done: 0 };
+  let overdue = 0;
+  let stalledContent = 0;
+  for (const t of tasks ?? []) {
+    statusCounts[t.status as keyof typeof statusCounts]++;
+    if (t.due_date && t.due_date < today && t.status !== "done") overdue++;
+    if (t.content_stage && t.content_stage !== "published") stalledContent++;
+  }
+
+  const { data: phrases } = await supabase
+    .from("tracked_phrases")
+    .select("id")
+    .eq("client_id", clientId)
+    .eq("locked", true);
+  const phraseIds = (phrases ?? []).map((p) => p.id);
+
+  let visibilitySummary: Record<string, unknown> = { has_data: false };
+  if (phraseIds.length > 0) {
+    const { data: checks } = await supabase
+      .from("citation_checks")
+      .select("platform, cited")
+      .in("phrase_id", phraseIds);
+    if (checks && checks.length > 0) {
+      const cited = checks.filter((c) => c.cited).length;
+      visibilitySummary = {
+        has_data: true,
+        overall_visibility_pct: Math.round((cited / checks.length) * 100),
+        total_checks: checks.length,
+      };
+    }
+  }
+
+  const { data: runRow } = await supabase
+    .from("agent_runs")
+    .insert({
+      agent_type: "monitoring",
+      client_id: clientId,
+      input: {},
+      status: "running",
+      requested_by: user.id,
+    })
+    .select()
+    .single();
+  if (!runRow) throw new Error("Failed to create agent run");
+
+  const userContent = JSON.stringify({
+    client_name: client.name,
+    task_status_counts: statusCounts,
+    overdue_tasks: overdue,
+    stalled_content_approvals: stalledContent,
+    visibility: visibilitySummary,
+  });
+
+  try {
+    const output = await callClaudeJSON<Record<string, unknown>>(
+      MONITORING_AGENT_SYSTEM_PROMPT,
+      userContent
+    );
+    await supabase
+      .from("agent_runs")
+      .update({ status: "completed", output })
+      .eq("id", runRow.id);
+    revalidatePath("/monitoring");
     return { runId: runRow.id as string, output };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
